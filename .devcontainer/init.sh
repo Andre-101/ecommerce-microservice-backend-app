@@ -1,36 +1,30 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
-echo "[init] instalando utilidades…"
-sudo apt-get update -y && sudo apt-get install -y jq make
+apt-get update
+apt-get install -y curl ca-certificates apt-transport-https gnupg lsb-release
 
-echo "[init] iniciando Docker (DinD)…"
-sudo service docker start
+# kubectl (estable)
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | gpg --dearmor -o /usr/share/keyrings/kubernetes-apt-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" >/etc/apt/sources.list.d/kubernetes.list
+apt-get update && apt-get install -y kubectl
 
-echo "[init] creando clúster k3d (si no existe)…"
-if ! k3d cluster list | grep -q plataformas2; then
-  k3d cluster create plataformas2 \
+# helm
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# k3d
+curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+# Crear clúster si no existe
+if ! kubectl config get-contexts 2>/dev/null | grep -q 'k3d-app'; then
+  k3d cluster create app \
     --servers 1 --agents 2 \
-    --port "80:80@loadbalancer" \
-    --port "443:443@loadbalancer"
+    -p "8080:80@loadbalancer" \
+    -p "8443:443@loadbalancer"
+  kubectl config use-context k3d-app
 fi
 
-echo "[init] esperando CoreDNS…"
-kubectl wait --for=condition=Available -n kube-system deploy/coredns --timeout=120s || true
-
-echo "[init] agregando repos Helm…"
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-
-echo "[init] instalando ingress-nginx…"
-helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  -n ingress-nginx --create-namespace
-
-echo "[init] instalando kube-prometheus-stack (Prometheus+Grafana)…"
-helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-  -n monitoring --create-namespace
-
-echo "[init] namespaces base…"
-kubectl create namespace app --dry-run=client -o yaml | kubectl apply -f -
-
-echo "[init] todo listo: k3d + Ingress + Monitoring"
+echo "✅ kubectl: $(kubectl version --client=true --output=json | jq -r '.clientVersion.gitVersion' 2>/dev/null || echo ok)"
+echo "✅ helm: $(helm version --short 2>/dev/null || echo ok)"
+echo "✅ k3d: $(k3d version 2>/dev/null || echo ok)"
+kubectl get nodes -o wide || true
