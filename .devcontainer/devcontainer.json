@@ -27,6 +27,6 @@
   "containerUser": "codespace",
   "userEnvProbe": "loginInteractiveShell",
   "updateRemoteUserUID": true,
-  "postCreateCommand": "bash .devcontainer/setup.sh && make bootstrap || true"
+  "postCreateCommand": "bash -eux .devcontainer/setup.sh && make bootstrap || true"
 }
 
