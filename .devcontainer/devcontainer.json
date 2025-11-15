@@ -1,32 +1,30 @@
 {
   "name": "Plataformas2",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
-    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" }
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
+    "ghcr.io/devcontainers/features/go:1": { "version": "1.22" }
   },
-  "runArgs": ["--privileged"],
-  "forwardPorts": [3000, 3001, 8080, 8081, 8443, 1880],
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "forwardPorts": [3000, 3001, 8000, 8080, 8081],
+
   "customizations": {
     "vscode": {
-      "settings": { "editor.formatOnSave": true },
+      "settings": {
+        "editor.formatOnSave": true
+      },
       "extensions": [
         "ms-azuretools.vscode-docker",
-        "ms-vscode-remote.remote-containers",
         "github.vscode-github-actions",
         "redhat.vscode-yaml",
-        "ms-python.python",
-        "esbenp.prettier-vscode",
-        "ms-vscode.makefile-tools",
-        "ms-kubernetes-tools.vscode-kubernetes-tools"
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "esbenp.prettier-vscode"
       ]
     }
-  },
-  "remoteUser": "codespace",
-  "containerUser": "codespace",
-  "userEnvProbe": "loginInteractiveShell",
-  "updateRemoteUserUID": true,
-  "postCreateCommand": "bash -eux .devcontainer/setup.sh && make bootstrap || true"
+  }
 }
-
